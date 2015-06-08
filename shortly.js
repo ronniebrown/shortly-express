@@ -22,18 +22,16 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+app.get('/', util.isUserLoggedIn, function(req, res) {
+  res.render('index');
+})
 
-app.get('/', 
+app.get('/create', util.isUserLoggedIn, 
 function(req, res) {
   res.render('index');
 });
 
-app.get('/create', 
-function(req, res) {
-  res.render('index');
-});
-
-app.get('/links', 
+app.get('/links', util.isUserLoggedIn,
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
@@ -78,6 +76,19 @@ function(req, res) {
 // Write your authentication routes here
 /************************************************************/
 
+
+  // check if user login ??
+app.get('/login', function(req, res) {
+  res.render('login');
+};
+
+app.get('/signup', function(req, res) {
+  res.render('signup');
+};
+
+app.get('/logout', function(req, res) {
+  res.redirect('/login');
+};
 
 
 /************************************************************/
