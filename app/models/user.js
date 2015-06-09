@@ -4,13 +4,16 @@ var Promise = require('bluebird');
 
 var User = db.Model.extend({
   username: String,
-  email: String,
-  password: String
+  password: String,
+  inititalize: function() {
+    db.knex('users').insert({ username: this.username, password: this.password });
+  }
 });
 
-User.hashPassword = function() {
-  bcrypt.hash(this.password, null, null, function(err, hash) {
-    db.knex('users').insert({ password: hash });
+User.hashPassword = function(password) {
+  bcrypt.hash(password, null, null, function(err, hash) {
+    // db.knex('users').insert({ password: hash });
+    return hash;
   });
 };
 

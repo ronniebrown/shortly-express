@@ -45,27 +45,49 @@ app.post('/login', function(req, res) {
   var password = req.body.password;
   // db query username & hash
   var hashed = db.knex('users').where({username: username}).select('password');
+  var found = db.knex('users').where({username: username});
 
-  user.comparePassword(hashed, function(matched) {
-    if (matched) {
-      app.use(session({
-      secret: 'Pacquiao for president',
-      resave: false,
-      saveUninitialized: true,
-      cookie: { secure: true, maxAge: 60000 }
-    } else {
-    // else
-    // error alert, clear fields 
+  if (!found) {
+    // user not found please try again or sign up
+    //redir to signup
+    res.redirect('/signup');
+  } else {
+
+    user.comparePassword(hashed, function(matched) {
+      if (matched) {
+        app.use(session({
+        secret: 'Pacquiao for president',
+        resave: false,
+        saveUninitialized: true,
+        cookie: { secure: true, maxAge: 60000 },
+        res.redirect('/');
+
+      } else {
+      // else
+      // error alert, clear fields 
+        res.redirect('/login');
+      }
+
     }
-  }));
-  });
+    // }));
+    });
 });
 
-// User.comparePassword = function(enteredPassword, cb) {
-//   bcrypt.compare(enteredPassword, this.password, function(err, match) {
-//     cb(match);
-//   });
-// };
+app.post('/signup', function(req, res) {
+  var username = req.body.username;
+  var hashed = user.hashPassword(req.body.password);
+
+  var user = new User({
+    username: username,
+    password: hashed
+  });
+
+  util.addUser(username, hashed);
+  //insert to database
+
+  
+
+});
 
 app.post('/links', 
 function(req, res) {
@@ -75,8 +97,6 @@ function(req, res) {
     console.log('Not a valid url: ', uri);
     return res.send(404);
   }
-
-
 
   new Link({ url: uri }).fetch().then(function(found) {
     if (found) {
