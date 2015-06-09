@@ -2,7 +2,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
-
+var session = require('express-session');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -24,7 +24,7 @@ app.use(express.static(__dirname + '/public'));
 
 app.get('/', util.isUserLoggedIn, function(req, res) {
   res.render('index');
-})
+});
 
 app.get('/create', util.isUserLoggedIn, 
 function(req, res) {
@@ -38,6 +38,35 @@ function(req, res) {
   });
 });
 
+//user posts username password
+
+app.post('/login', function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+  // db query username & hash
+  var hashed = db.knex('users').where({username: username}).select('password');
+
+  user.comparePassword(hashed, function(matched) {
+    if (matched) {
+      app.use(session({
+      secret: 'Pacquiao for president',
+      resave: false,
+      saveUninitialized: true,
+      cookie: { secure: true, maxAge: 60000 }
+    } else {
+    // else
+    // error alert, clear fields 
+    }
+  }));
+  });
+});
+
+// User.comparePassword = function(enteredPassword, cb) {
+//   bcrypt.compare(enteredPassword, this.password, function(err, match) {
+//     cb(match);
+//   });
+// };
+
 app.post('/links', 
 function(req, res) {
   var uri = req.body.url;
@@ -46,6 +75,8 @@ function(req, res) {
     console.log('Not a valid url: ', uri);
     return res.send(404);
   }
+
+
 
   new Link({ url: uri }).fetch().then(function(found) {
     if (found) {
@@ -77,7 +108,7 @@ function(req, res) {
 /************************************************************/
 
 
-  // check if user login ??
+  // check if user is logged in ??
 app.get('/login', function(req, res) {
   res.render('login');
 };
