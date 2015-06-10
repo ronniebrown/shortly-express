@@ -46,14 +46,13 @@ db.knex.schema.hasTable('clicks').then(function(exists) {
 /************************************************************/
 
 //USER TABLE
-db.knex.schema.hasTable('users').then(function(exist) {
+db.knex.schema.hasTable('users').then(function(exists) {
   if (!exists) {
     db.knex.schema.createTable('users', function(user) {
       user.increments('id').primary();
-      user.string('username', 50);
-      //todo: hashing and salting
-      // user.string('email', 50);
       user.string('password', 255);
+      user.string('username', 50);
+      user.timestamps();
       // user.string('salt', 255);
   }).then(function (table) {
     console.log('Created Table', table);

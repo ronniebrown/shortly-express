@@ -3,24 +3,38 @@ var bcrypt = require('bcrypt-nodejs');
 var Promise = require('bluebird');
 
 var User = db.Model.extend({
-  username: String,
-  password: String,
+  tableName: 'users',
+  hasTimestamps: true,
   inititalize: function() {
-    db.knex('users').insert({ username: this.username, password: this.password });
+    this.on('creating', this.hashPassword);
+  }, 
+  comparePassword: function(enteredPassword, cb) {
+    bcrypt.compare(enteredPassword, this.get('password'), function(err, match) {
+      cb(match);
+    });
+  },
+  hashPassword: function() {
+    var cipher = Promise.promisify(bcrypt.hash);
+    return cipher(this.get('password'), null, null).bind(this)
+      .then(function(hash) {
+        this.set('password', hash);
+      });
   }
 });
 
-User.hashPassword = function(password) {
-  bcrypt.hash(password, null, null, function(err, hash) {
-    // db.knex('users').insert({ password: hash });
-    return hash;
-  });
-};
-
-User.comparePassword = function(enteredPassword, cb) {
-  bcrypt.compare(enteredPassword, this.password, function(err, match) {
-    cb(match);
-  });
-};
-
 module.exports = User;
+
+// var User = db.Model.extend({
+//   inititalize: function() {
+//     this.on('creating', function(model, attrs, options) {
+//       var hash = bcrypt.hashSync(model.get('password'));
+//       model.set('password', hash);
+//     });
+//   }
+// });
+
+// var comparePassword = function(enteredPassword, cb) {
+//   bcrypt.compare(enteredPassword, this.password, function(err, match) {
+//     cb(match);
+//   });
+// };

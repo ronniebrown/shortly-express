@@ -2,7 +2,6 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
-var session = require('express-session');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -22,71 +21,28 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
-app.get('/', util.isUserLoggedIn, function(req, res) {
+var session = require('express-session');
+app.use(session({
+  secret: 'Pacman for prez tho',
+  resave: false,
+  saveUninitialized: true
+}));
+
+app.get('/', util.checkUser, function(req, res) {
+  console.log('get is requested');
   res.render('index');
 });
 
-app.get('/create', util.isUserLoggedIn, 
+app.get('/create', util.checkUser, 
 function(req, res) {
   res.render('index');
 });
 
-app.get('/links', util.isUserLoggedIn,
+app.get('/links', util.checkUser,
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
-});
-
-//user posts username password
-
-app.post('/login', function(req, res) {
-  var username = req.body.username;
-  var password = req.body.password;
-  // db query username & hash
-  var hashed = db.knex('users').where({username: username}).select('password');
-  var found = db.knex('users').where({username: username});
-
-  if (!found) {
-    // user not found please try again or sign up
-    //redir to signup
-    res.redirect('/signup');
-  } else {
-
-    user.comparePassword(hashed, function(matched) {
-      if (matched) {
-        app.use(session({
-        secret: 'Pacquiao for president',
-        resave: false,
-        saveUninitialized: true,
-        cookie: { secure: true, maxAge: 60000 },
-        res.redirect('/');
-
-      } else {
-      // else
-      // error alert, clear fields 
-        res.redirect('/login');
-      }
-
-    }
-    // }));
-    });
-});
-
-app.post('/signup', function(req, res) {
-  var username = req.body.username;
-  var hashed = user.hashPassword(req.body.password);
-
-  var user = new User({
-    username: username,
-    password: hashed
-  });
-
-  util.addUser(username, hashed);
-  //insert to database
-
-  
-
 });
 
 app.post('/links', 
@@ -127,19 +83,91 @@ function(req, res) {
 // Write your authentication routes here
 /************************************************************/
 
-
-  // check if user is logged in ??
 app.get('/login', function(req, res) {
-  res.render('login');
-};
+ res.render('login');
+});
 
 app.get('/signup', function(req, res) {
-  res.render('signup');
-};
+ res.render('signup');
+});
 
-app.get('/logout', function(req, res) {
-  res.redirect('/login');
-};
+app.get('/logout', function(req, res) { 
+  req.session.destroy();
+  res.redirect('/login'); 
+});
+
+//user posts username password
+
+app.post('/login', function(req, res) {
+  var thisusername = req.body.username;
+  var password = req.body.password;
+
+  new User({ username: thisusername }).fetch().then(function(user) {
+    if (!user) {
+      return res.redirect('/login');
+    } 
+    user.comparePassword(password, function(match) {
+      if (match) {
+        util.createSession(req, res, user);
+      } else {
+        res.redirect('/login');
+      }
+    })
+  });
+});
+
+  // OLD CODE
+  // new User({ username: thisusername }).fetch().then(function(found) {
+  //   console.log(found);
+  //   if (!found) {
+  //     res.redirect('/signup');
+  //   } else {
+  //     found.comparePassword(password, found.attributes.password)
+  //       .then(function(results) {
+  //         if (results) {
+  //           req.session.user = found.attributes.username;
+  //           res.redirect('/');
+  //         } else {
+  //           res.redirect('login');
+  //         }
+  //       });
+  //   } 
+  // });
+
+app.post('/signup', function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+  
+  new User({ username: username}).fetch().then(function(user) {
+    if (!user) {
+      var newUser = new User({
+        username: username,
+        password: password
+      });
+      newUser.save().then(function(savedUser) {
+        util.createSession(req, res, savedUser);
+      });
+    } else {
+      res.redirect('/signup');
+    }
+  });
+});
+  // new User({ username: username}).fetch().then(function(hashed) {
+  //   if (hashed) {
+  //     res.send(200, 'Username already exists');
+  //   } else {
+  //     var user = new User({
+  //       username: username,
+  //       password: password
+  //     });
+
+  //     Users.save().then(function(newUser) {
+  //       Users.add(newUser);
+  //       res.send(200, newUser);
+  //     });
+  //   }
+  // });
+
 
 
 /************************************************************/
