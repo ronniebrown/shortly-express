@@ -12,6 +12,8 @@ var Click = require('./app/models/click');
 
 var app = express();
 
+var passport = require('passport');
+
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 app.use(partials());
@@ -27,6 +29,41 @@ app.use(session({
   resave: false,
   saveUninitialized: true
 }));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+var GitHubStrategy = require('passport-github').Strategy;
+
+passport.use(new GitHubStrategy({
+    // fill out 
+    clientID: GITHUB_CLIENT_ID,
+    clientSecret: GITHUB_CLIENT_SECRET,
+    callbackURL: "http://127.0.0.1:4568/auth/github/callback"
+  },
+
+  function(accessToken, refreshToken, profile, done) {
+    User.findOrCreate({ githubId: profile.id }, function (err, user) {
+      if (!user) {
+        var newUser = new User({
+          githubId: profile.id,
+          githubToken: accessToken
+        });
+        newUser.save().then(function(newUser) {
+          Users.add(newUser);
+        });
+      } else {
+        return done(err, user);
+      }
+    });
+
+    //serialize
+
+
+    //deserialize
+  }
+));
+
 
 app.get('/', util.checkUser, function(req, res) {
   console.log('get is requested');
@@ -82,6 +119,16 @@ function(req, res) {
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
+
+app.get('/auth/github',
+  passport.authenticate('github', { scope: [ 'user:email' ] }));
+
+app.get('/auth/github/callback', 
+  passport.authenticate('github', { failureRedirect: '/login' }),
+  function(req, res) {
+    // Successful authentication, redirect home.
+    res.redirect('/');
+});
 
 app.get('/login', function(req, res) {
  res.render('login');

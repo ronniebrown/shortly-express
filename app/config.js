@@ -46,12 +46,27 @@ db.knex.schema.hasTable('clicks').then(function(exists) {
 /************************************************************/
 
 //USER TABLE
+// db.knex.schema.hasTable('users').then(function(exists) {
+//   if (!exists) {
+//     db.knex.schema.createTable('users', function(user) {
+//       user.increments('id').primary();
+//       user.string('password', 255);
+//       user.string('username', 50);
+//       user.timestamps();
+//       // user.string('salt', 255);
+//   }).then(function (table) {
+//     console.log('Created Table', table);
+//   });
+//   }
+// });
+
+
 db.knex.schema.hasTable('users').then(function(exists) {
   if (!exists) {
     db.knex.schema.createTable('users', function(user) {
       user.increments('id').primary();
-      user.string('password', 255);
-      user.string('username', 50);
+      user.string('githubId', 255);
+      user.string('githubToken', 50);
       user.timestamps();
       // user.string('salt', 255);
   }).then(function (table) {
